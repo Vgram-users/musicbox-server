@@ -1,17 +1,38 @@
 from contextlib import asynccontextmanager
+import secrets
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func, select
 
 from . import __version__
 from .config import settings
-from .db import init_db
+from .db import SessionLocal, init_db
+from .models import InviteCode
 from .routers import auth, extras, playlists, radio, system, tracks
+
+_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+
+def _ensure_invites() -> None:
+    """На свежей БД сразу создаём коды для друзей."""
+    db = SessionLocal()
+    try:
+        count = db.scalar(select(func.count()).select_from(InviteCode)) or 0
+        if count:
+            return
+        for _ in range(15):
+            raw = "".join(secrets.choice(_ALPHABET) for _ in range(8))
+            db.add(InviteCode(code=f"{raw[:4]}-{raw[4:]}", note="авто"))
+        db.commit()
+    finally:
+        db.close()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    _ensure_invites()
     yield
 
 

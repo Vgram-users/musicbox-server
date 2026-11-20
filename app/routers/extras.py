@@ -16,6 +16,24 @@ _TTL = 60 * 60 * 24
 _HEADERS = {"User-Agent": "MusicBox/0.2 (lyrics)"}
 
 
+@router.get("/invites")
+def invites() -> dict:
+    """Свободные инвайт-коды (для приглашения друзей)."""
+    from sqlalchemy import select
+
+    from ..db import SessionLocal
+    from ..models import InviteCode
+
+    db = SessionLocal()
+    try:
+        rows = db.scalars(
+            select(InviteCode).where(InviteCode.used_by.is_(None))
+        ).all()
+        return {"items": [row.code for row in rows]}
+    finally:
+        db.close()
+
+
 @router.get("/stats")
 def stats() -> dict:
     from sqlalchemy import func, select
