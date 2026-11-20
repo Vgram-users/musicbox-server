@@ -18,10 +18,16 @@ def _ensure_invites() -> None:
     """На свежей БД сразу создаём коды для друзей."""
     db = SessionLocal()
     try:
-        count = db.scalar(select(func.count()).select_from(InviteCode)) or 0
-        if count:
+        used = db.scalar(
+            select(func.count()).select_from(InviteCode).where(InviteCode.used_by.is_not(None))
+        ) or 0
+        free = db.scalar(
+            select(func.count()).select_from(InviteCode).where(InviteCode.used_by.is_(None))
+        ) or 0
+        need = max(0, 15 - free)
+        if need == 0:
             return
-        for _ in range(15):
+        for _ in range(need):
             raw = "".join(secrets.choice(_ALPHABET) for _ in range(8))
             db.add(InviteCode(code=f"{raw[:4]}-{raw[4:]}", note="авто"))
         db.commit()
