@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: musicbox-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: musicbox-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: INVITE_ONLY
+        value: "true"
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: MAX_UPLOAD_MB
+        value: "50"
+      - key: PROXY_URL
+        sync: false
+
+databases:
+  - name: musicbox-db
+    plan: free
+    postgresMajorVersion: "16"
